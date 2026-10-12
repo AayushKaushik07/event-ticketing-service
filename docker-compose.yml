@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: ticketing
+      MYSQL_USER: ticketing
+      MYSQL_PASSWORD: ticketing
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uticketing", "-pticketing"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  api:
+    build: .
+    environment:
+      # Host is `db`, the compose service name. `localhost` here would mean the
+      # API container itself.
+      DATABASE_URL: mysql+pymysql://ticketing:ticketing@db:3306/ticketing
+      # Taken from .env when set there; the fallback is for local trials only.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-in-production}
+      APP_ENV: docker
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        # Plain depends_on waits for the container to start, not for MySQL to
+        # accept connections. MySQL takes ~20s on first boot to initialise.
+        condition: service_healthy
+
+volumes:
+  mysqldata:

@@ -1,0 +1,3 @@
+# Keep LF line endings: the image runs `sh -c` and shell scripts, which break on CRLF.
+* text=auto eol=lf
+*.png binary
